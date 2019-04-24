@@ -1,7 +1,8 @@
 # Inspiration and some credit goes to The PC Geek https://youtu.be/RTZlPaGX4Mg
 
 import requests
-
+import re
+from tqdm import tqdm
 
 def get_calender_json(url, year):
     url = url.replace(':', '%3A').replace('/', '%2F').replace('&', '%26')
@@ -52,7 +53,7 @@ def get_site_html_raw_date(url, raw_date):
     html = requests.get(f'https://web.archive.org/web/{raw_date}/{url}').text
     html = html.replace('''<div id="wm-ipp-base" lang="en" style="display: block; direction: ltr;">
 </div>''', '')
-    print(html)
+    return(html)
 
 
 def get_site_html_first(url):
@@ -65,3 +66,19 @@ def get_site_html_last(url):
     ts = get_years_data(url)
     ts = ts['last_ts']
     return get_site_html_raw_date(url, ts)
+
+def all_timestamps(url):
+    list_of_timestamps = []
+    for year in get_years(url):
+        list_of_timestamps += re.findall(r'20\d{2}[0-1]\d[0-3]\d[0-2]\d[0-5]\d[0-5]\d', str(get_calender_json(url, year)))
+    return list_of_timestamps
+
+def get_all_archived_html(url, progress_bar=False):
+    captures = {}
+    if progress_bar:
+        for timestamp in tqdm(all_timestamps(url)):
+            captures[timestamp] = get_site_html_raw_date(url, timestamp)
+    else:
+        for timestamp in all_timestamps(url):
+            captures[timestamp] = get_site_html_raw_date(url, timestamp)
+    return captures
